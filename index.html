@@ -3,529 +3,1467 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mississippi Delta — Candidate Sampling Lakes</title>
+<title>MS Delta Oxbow Lakes — Grace A. Rogers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: 'Georgia', serif;
-    background: #e9e4d6;
-    color: #16312b;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  #header {
-    background: #10342e;
-    padding: 12px 20px;
-    border-bottom: 2px solid #4aa3a0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-  }
-  #header h1 {
-    font-size: 16px;
-    font-weight: bold;
-    color: #d7f2f0;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-  #header p {
-    font-size: 11px;
-    color: #a7d8d5;
-    margin-top: 3px;
-  }
-  #header-right {
-    font-size: 10px;
-    color: #a7d8d5;
-    text-align: right;
-    line-height: 1.6;
-  }
-
-  #main { display: flex; flex: 1; overflow: hidden; }
-
-  /* SIDEBAR */
-  #sidebar {
-    position: relative;
-    width: 260px;
-    min-width: 260px;
-    background: #10342e;
-    border-right: 2px solid #2f6f6a;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    transition: width 0.3s ease, min-width 0.3s ease;
-  }
-  #sidebar.collapsed { width: 0; min-width: 0; }
-
-  #sidebar-inner {
-    padding: 14px;
-    overflow-y: auto;
-    flex: 1;
-  }
-  #sidebar-inner::-webkit-scrollbar { width: 5px; }
-  #sidebar-inner::-webkit-scrollbar-track { background: #10342e; }
-  #sidebar-inner::-webkit-scrollbar-thumb { background: #4aa3a0; border-radius: 3px; }
-
-  .sidebar-section { margin-bottom: 18px; }
-  .sidebar-title {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: #a7d8d5;
-    border-bottom: 1px solid #2f6f6a;
-    padding-bottom: 5px;
-    margin-bottom: 10px;
-  }
-
-  /* LEGEND */
-  .legend-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 7px;
-    font-size: 12px;
-    color: #d7f2f0;
-  }
-  .legend-dot {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    margin-right: 9px;
-    border: 2px solid rgba(255,255,255,0.3);
-    flex-shrink: 0;
-  }
-
-  /* COUNTY TOGGLES */
-  .county-toggle {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-    cursor: pointer;
-    font-size: 12px;
-    color: #d7f2f0;
-    user-select: none;
-  }
-  .county-toggle input {
-    margin-right: 8px;
-    cursor: pointer;
-    accent-color: #4aa3a0;
-    width: 14px;
-    height: 14px;
-  }
-  .county-toggle:hover { color: #ffffff; }
-  .county-count {
-    margin-left: auto;
-    background: #173f38;
-    color: #a7d8d5;
-    font-size: 10px;
-    padding: 1px 6px;
-    border-radius: 10px;
-  }
-
-  /* SELECT ALL */
-  #select-all-btn {
-    width: 100%;
-    padding: 6px;
-    background: #173f38;
-    color: #d7f2f0;
-    border: 1px solid #4aa3a0;
-    border-radius: 4px;
-    font-size: 11px;
-    cursor: pointer;
-    margin-bottom: 10px;
-    letter-spacing: 0.5px;
-  }
-  #select-all-btn:hover { background: #4aa3a0; color: #0c2621; }
-
-  /* STATS */
-  .stat-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-    color: #a7d8d5;
-    margin-bottom: 5px;
-    padding: 4px 6px;
-    background: #173f38;
-    border-radius: 3px;
-  }
-  .stat-val { color: #d7f2f0; font-weight: bold; }
-
-  /* SIDEBAR TOGGLE BUTTON */
-  #toggle-sidebar {
-    position: absolute;
-    right: -22px;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 2000;
-
-    background: #11302a;
-    border: 2px solid #4aa3a0;
-    color: #d7f2f0;
-
-    width: 22px;
-    height: 56px;
-    cursor: pointer;
-
-    border-left: none;
-    border-radius: 0 10px 10px 0;
-
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  #toggle-sidebar:hover { background: #1d5b52; color: #ffffff; }
-  #sidebar.collapsed #toggle-sidebar {
-    right: -22px;
-    border-left: 2px solid #4aa3a0;
-    border-right: none;
-    border-radius: 10px 0 0 10px;
-  }
-
-  /* MAP */
-  #map-container { position: relative; flex: 1; overflow: hidden; }
-  #map { width: 100%; height: 100%; background: #efe6d2; }
-
-  /* slight clarity boost without destroying colors */
-  .basemap-tiles { filter: contrast(1.18) saturate(1.12) brightness(1.02); }
-
-  /* FOOTER */
-  #footer {
-    background: #0c2621;
-    border-top: 1px solid #2f6f6a;
-    padding: 6px 16px;
-    font-size: 10px;
-    color: #a7d8d5;
-    flex-shrink: 0;
-    line-height: 1.6;
-  }
-  #footer span { color: #d7f2f0; }
-
-  /* POPUP */
-  .custom-popup .leaflet-popup-content-wrapper {
-    background: #10342e;
-    border: 1px solid #4aa3a0;
-    border-radius: 6px;
-    color: #d7f2f0;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.35);
-    min-width: 240px;
-  }
-  .custom-popup .leaflet-popup-tip { background: #4aa3a0; }
-  .custom-popup .leaflet-popup-content { margin: 12px 14px; font-family: 'Georgia', serif; }
-
-  .popup-title { font-size: 14px; font-weight: bold; color: #d7f2f0; margin-bottom: 2px; }
-  .popup-county {
-    font-size: 10px;
-    color: #a7d8d5;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 10px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #2f6f6a;
-  }
-  .popup-badge {
-    display: inline-block;
-    font-size: 9px;
-    padding: 2px 7px;
-    border-radius: 10px;
-    font-weight: bold;
-    letter-spacing: 0.5px;
-    margin-bottom: 10px;
-    text-transform: uppercase;
-  }
-  .badge-natural { background: #1f5c5a; color: #d7f2f0; border: 1px solid #4aa3a0; }
-  .badge-reservoir { background: #7a3f2f; color: #ffe6da; border: 1px solid #c06c4a; }
-
-  .popup-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-    margin-bottom: 5px;
-    padding: 3px 0;
-    border-bottom: 1px solid rgba(167,216,213,0.25);
-  }
-  .popup-label { color: #a7d8d5; }
-  .popup-val { color: #d7f2f0; text-align: right; max-width: 60%; }
-
-  .limited-data-banner {
-    margin-top: 10px;
-    padding: 5px 8px;
-    background: #3a2f12;
-    border: 1px solid #c9a84a;
-    border-radius: 4px;
-    font-size: 10px;
-    color: #ffe9a8;
-    text-align: center;
-    letter-spacing: 0.5px;
-  }
-  .popup-coords {
-    font-size: 10px;
-    color: #a7d8d5;
-    margin-top: 8px;
-    text-align: center;
-    font-style: italic;
-  }
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f4f1eb;--panel:#fff;--border:#ddd8cc;--text:#2c2c2c;--muted:#7a7468;
+  --blue:#1a3a5c;--blue-mid:#2d6a9f;--blue-light:#a8c8e8;--blue-pale:#e8f2fa;
+  --green:#4a7c59;--green-pale:#eaf2e8;--accent:#c47d3e;
+  --shadow:0 2px 12px rgba(0,0,0,.10);--r:10px;
+  --font:'Barlow',sans-serif;--fcond:'Barlow Condensed',sans-serif;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+/* HEADER */
+#hdr{background:var(--blue);color:#fff;padding:9px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:3px solid var(--accent);z-index:1000}
+#hdr-l{display:flex;align-items:center;gap:13px}
+#hdr-logo{width:36px;height:36px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fcond);font-size:15px;font-weight:700;color:#fff;flex-shrink:0}
+#hdr-title h1{font-family:var(--fcond);font-size:16px;font-weight:700;letter-spacing:.4px}
+#hdr-title p{font-size:11px;color:rgba(255,255,255,.6);font-weight:300}
+#hdr-stats{display:flex;gap:12px}
+.hs{text-align:center;background:rgba(255,255,255,.08);padding:4px 11px;border-radius:6px}
+.hs-n{font-family:var(--fcond);font-size:18px;font-weight:700;color:var(--accent);line-height:1}
+.hs-l{font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.4px}
+#hdr-meta{font-size:10.5px;color:rgba(255,255,255,.5);text-align:right;line-height:1.7}
+#hdr-meta b{color:rgba(255,255,255,.8)}
+/* MAIN */
+#main{display:flex;flex:1;overflow:hidden}
+/* SIDEBAR */
+#sb{width:272px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;z-index:500}
+#sb-inner{overflow-y:auto;flex:1;padding:12px}
+#sb-inner::-webkit-scrollbar{width:3px}
+#sb-inner::-webkit-scrollbar-thumb{background:#ccc;border-radius:2px}
+.sh{font-family:var(--fcond);font-size:10.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin:13px 0 6px;padding-bottom:3px;border-bottom:1px solid var(--border)}
+.sh:first-child{margin-top:3px}
+/* Toggle rows */
+.tr{display:flex;align-items:center;gap:8px;padding:5px 5px;border-radius:6px;cursor:pointer;transition:background .12s;user-select:none;margin-bottom:2px}
+.tr:hover{background:var(--bg)}
+.tb{width:15px;height:15px;border-radius:3px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.tr.on .tb{border-color:var(--blue-mid);background:var(--blue-mid)}
+.tb svg{display:none}.tr.on .tb svg{display:block}
+.ti{font-size:13px;line-height:1}
+.tl{font-size:12.5px;font-weight:500;flex:1}
+.tc{font-size:10px;background:var(--bg);color:var(--muted);padding:1px 5px;border-radius:9px;font-family:var(--fcond);font-weight:600}
+/* Search */
+#sw{position:relative;margin-bottom:9px}
+#sb-search{width:100%;padding:7px 30px 7px 9px;border:1px solid var(--border);border-radius:6px;font-family:var(--font);font-size:12.5px;background:var(--bg);color:var(--text);outline:none;transition:border .15s}
+#sb-search:focus{border-color:var(--blue-mid);background:#fff}
+#si{position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none}
+#sr{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:0 0 6px 6px;z-index:9999;box-shadow:var(--shadow);max-height:170px;overflow-y:auto;display:none}
+.sri{padding:6px 9px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border);transition:background .1s}
+.sri:last-child{border-bottom:none}.sri:hover{background:var(--blue-pale)}
+.sri b{color:var(--blue-mid)}
+/* County pills */
+#cpills{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px}
+.cp{padding:3px 8px;border-radius:11px;font-size:11px;font-weight:600;font-family:var(--fcond);cursor:pointer;border:2px solid transparent;transition:all .15s;opacity:.45}
+.cp.on{opacity:1;border-color:rgba(0,0,0,.18)}
+/* County panel */
+#cpanel{position:fixed;right:-350px;top:52px;bottom:0;width:330px;background:var(--panel);border-left:1px solid var(--border);z-index:800;transition:right .28s ease;overflow-y:auto;box-shadow:-3px 0 14px rgba(0,0,0,.08);padding:16px}
+#cpanel.open{right:0}
+#cp-x{position:absolute;top:11px;right:11px;background:none;border:none;font-size:17px;cursor:pointer;color:var(--muted)}
+#cp-x:hover{color:var(--text)}
+/* MAP */
+#mw{flex:1;position:relative}
+#map{width:100%;height:100%}
+/* LEGEND */
+#leg{position:absolute;bottom:26px;left:12px;background:var(--panel);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:11px 13px;z-index:700;min-width:165px;font-size:11.5px}
+#leg h4{font-family:var(--fcond);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--blue);margin-bottom:7px}
+.lr{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.ld{width:11px;height:11px;border-radius:50%;flex-shrink:0;border:1.5px solid rgba(0,0,0,.12)}
+.ll{font-size:11px}
+.ldiv{border:none;border-top:1px solid var(--border);margin:6px 0}
+/* POPUP */
+.lp{font-family:var(--font);width:305px;max-height:430px;overflow-y:auto;scrollbar-width:thin}
+.lp::-webkit-scrollbar{width:3px}.lp::-webkit-scrollbar-thumb{background:#ccc;border-radius:2px}
+.ph{padding:11px 13px 9px;border-radius:6px 6px 0 0;margin:-1px -1px 0 -1px}
+.ph h3{font-family:var(--fcond);font-size:15px;font-weight:700;line-height:1.2;margin-bottom:2px}
+.ph .sub{font-size:11px;opacity:.8}
+.pb{padding:9px 13px}
+.pg{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:7px}
+.pgl{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.pgv{font-size:12.5px;font-weight:600}
+.badge{display:inline-block;padding:2px 8px;border-radius:9px;font-size:10.5px;font-weight:600;margin:2px 2px 2px 0}
+.b-pub{background:#e8f5e9;color:#2e7d32}.b-unk{background:#f5f5f5;color:#757575}
+.b-nat{background:var(--blue-pale);color:var(--blue)}.b-ant{background:var(--green-pale);color:var(--green)}
+.psec{margin-bottom:8px}
+.psh{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:2px;margin-bottom:5px}
+.pphoto{width:100%;height:75px;background:linear-gradient(135deg,var(--blue-pale) 0%,var(--green-pale) 100%);border-radius:5px;margin-bottom:7px;display:flex;align-items:center;justify-content:center;color:var(--blue-mid);font-size:11.5px;border:1px dashed var(--blue-light)}
+.dbg{height:7px;background:#e8f2fa;border-radius:3px;overflow:hidden;margin:3px 0}
+.dbf{height:100%;border-radius:3px}
+.agbg{height:7px;background:#eaf2e8;border-radius:3px;overflow:hidden;margin:3px 0}
+.agbf{height:100%;border-radius:3px}
+.coord{font-family:'Courier New',monospace;font-size:10.5px;color:var(--muted);background:var(--bg);padding:2px 6px;border-radius:3px;display:inline-block}
+.pnote{font-size:11px;color:var(--muted);font-style:italic;line-height:1.45}
+/* TITLE */
+#tc{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid var(--border);border-radius:18px;padding:5px 16px;z-index:700;box-shadow:var(--shadow);text-align:center;white-space:nowrap;pointer-events:none}
+#tc b{font-family:var(--fcond);font-size:12.5px;color:var(--blue);letter-spacing:.3px}
+#tc span{font-size:10.5px;color:var(--muted);margin-left:7px}
+/* COORDS */
+#cbar{position:absolute;bottom:6px;right:8px;background:rgba(255,255,255,.88);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:'Courier New',monospace;font-size:10.5px;color:var(--muted);z-index:700;pointer-events:none}
+/* LOADING */
+#loading{position:fixed;inset:0;background:var(--blue);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;transition:opacity .4s}
+#loading h2{font-family:var(--fcond);color:#fff;font-size:20px;letter-spacing:1px;margin-top:14px}
+#loading p{color:rgba(255,255,255,.45);font-size:12px;margin-top:5px}
+.spin{width:36px;height:36px;border:3px solid rgba(255,255,255,.15);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* County panel */
+.cph{font-family:var(--fcond);font-size:19px;font-weight:700;margin-bottom:3px}
+.cps{font-size:11.5px;color:var(--muted);margin-bottom:12px}
+.cpsg{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}
+.cpst{background:var(--bg);border-radius:6px;padding:8px 10px}
+.cpsn{font-family:var(--fcond);font-size:20px;font-weight:700;line-height:1}
+.cpsl{font-size:10.5px;color:var(--muted);margin-top:1px}
+.cpi{padding:5px 7px;border-radius:5px;cursor:pointer;transition:background .1s;display:flex;align-items:center;gap:7px;margin-bottom:2px;font-size:12px}
+.cpi:hover{background:var(--blue-pale)}
+.cpd{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+@media(max-width:650px){#sb,#hdr-stats,#hdr-meta{display:none}}
 </style>
 </head>
-
 <body>
+<div id="loading"><div class="spin"></div><h2>MS Delta Lakes</h2><p>Loading study site map…</p></div>
 
-<div id="header">
-  <div>
-    <h1>Mississippi Delta — Candidate Sampling Lakes</h1>
-    <p>Core Counties Only &nbsp;|&nbsp; ≥25 km from Nearest City &nbsp;|&nbsp; n=67 lakes</p>
+<div id="hdr">
+  <div id="hdr-l">
+    <div id="hdr-logo">GR</div>
+    <div id="hdr-title">
+      <h1>Mississippi Delta Oxbow Lakes — Phase 2</h1>
+      <p>Grace A. Rogers &nbsp;·&nbsp; Mississippi College &nbsp;·&nbsp; 2026</p>
+    </div>
   </div>
-  <div id="header-right">
-    Data Sources: USGS National Hydrography Dataset (NHD) &nbsp;|&nbsp; U.S. Census Bureau TIGER/Line 2020<br>
-    Coordinates: WGS84 (EPSG:4326) &nbsp;|&nbsp; Distances: Haversine formula &nbsp;|&nbsp; Classification: NHD FType/FCode
+  <div id="hdr-stats">
+    <div class="hs"><div class="hs-n">37</div><div class="hs-l">Lakes</div></div>
+    <div class="hs"><div class="hs-n">6</div><div class="hs-l">Counties</div></div>
+    <div class="hs"><div class="hs-n">35</div><div class="hs-l">Natural</div></div>
+    <div class="hs"><div class="hs-n">2</div><div class="hs-l">Reservoirs</div></div>
   </div>
+  <div id="hdr-meta"><b>Sources:</b> USGS NHD · USDA CDL 2023<br>MDWFP · US Census 2020 · USACE</div>
 </div>
 
 <div id="main">
-  <div id="sidebar">
-    <button id="toggle-sidebar" onclick="toggleSidebar()">&#9664;</button>
-
-    <div id="sidebar-inner">
-      <div class="sidebar-section">
-        <div class="sidebar-title">Waterbody Class</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#2b7bbd"></div>Natural Lake</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#c06c4a"></div>Reservoir</div>
+  <div id="sb">
+    <div id="sb-inner">
+      <div id="sw">
+        <input type="text" id="sb-search" placeholder="Search lake or county…">
+        <span id="si">🔍</span>
+        <div id="sr"></div>
       </div>
 
-      <div class="sidebar-section">
-        <div class="sidebar-title">Filter by County</div>
-        <button id="select-all-btn" onclick="toggleAll()">Deselect All</button>
-        <div id="county-checkboxes"></div>
+      <div class="sh">Hydrology</div>
+      <div class="tr on" id="tog-all" onclick="togL(this,'all')"><div class="tb"><svg width="9" height="7" viewBox="0 0 9 7"><path d="M1 3.5l2.5 2.5L8 1" stroke="white" stroke-width="1.8" fill="none"/></svg></div><span class="ti">💧</span><span class="tl">All Lakes</span><span class="tc">37</span></div>
+      <div class="tr on" id="tog-nat" onclick="togL(this,'nat')"><div class="tb"><svg width="9" height="7" viewBox="0 0 9 7"><path d="M1 3.5l2.5 2.5L8 1" stroke="white" stroke-width="1.8" fill="none"/></svg></div><span class="ti">🔵</span><span class="tl">Natural Lakes</span><span class="tc">35</span></div>
+      <div class="tr on" id="tog-ant" onclick="togL(this,'ant')"><div class="tb"><svg width="9" height="7" viewBox="0 0 9 7"><path d="M1 3.5l2.5 2.5L8 1" stroke="white" stroke-width="1.8" fill="none"/></svg></div><span class="ti">🔧</span><span class="tl">Man-made</span><span class="tc">2</span></div>
+      <div class="tr on" id="tog-riv" onclick="togL(this,'riv')"><div class="tb"><svg width="9" height="7" viewBox="0 0 9 7"><path d="M1 3.5l2.5 2.5L8 1" stroke="white" stroke-width="1.8" fill="none"/></svg></div><span class="ti">🌊</span><span class="tl">Rivers & Waterways</span></div>
+      <div class="tr" id="tog-heat" onclick="togL(this,'heat')"><div class="tb"><svg width="9" height="7" viewBox="0 0 9 7"><path d="M1 3.5l2.5 2.5L8 1" stroke="white" stroke-width="1.8" fill="none"/></svg></div><span class="ti">🔥</span><span class="tl">Lake Heatmap</span></div>
+
+      <div class="sh">Filters</div>
+      <div class="tr" id="tog-pub" onclick="togL(this,'pub')"><div class="tb"><svg width="9" height="7" viewBox="0 0 9 7"><path d="M1 3.5l2.5 2.5L8 1" stroke="white" stroke-width="1.8" fill="none"/></svg></div><span class="ti">🔓</span><span class="tl">Public Access Only</span><span class="tc">12</span></div>
+      <div class="tr" id="tog-dep" onclick="togL(this,'dep')"><div class="tb"><svg width="9" height="7" viewBox="0 0 9 7"><path d="M1 3.5l2.5 2.5L8 1" stroke="white" stroke-width="1.8" fill="none"/></svg></div><span class="ti">📏</span><span class="tl">Needs Depth Data</span><span class="tc">28</span></div>
+
+      <div class="sh">Boundaries</div>
+      <div class="tr on" id="tog-co" onclick="togL(this,'co')"><div class="tb"><svg width="9" height="7" viewBox="0 0 9 7"><path d="M1 3.5l2.5 2.5L8 1" stroke="white" stroke-width="1.8" fill="none"/></svg></div><span class="ti">🗺️</span><span class="tl">County Boundaries</span></div>
+      <div class="tr on" id="tog-del" onclick="togL(this,'del')"><div class="tb"><svg width="9" height="7" viewBox="0 0 9 7"><path d="M1 3.5l2.5 2.5L8 1" stroke="white" stroke-width="1.8" fill="none"/></svg></div><span class="ti">📐</span><span class="tl">Delta Boundary</span></div>
+      <div class="tr on" id="tog-lev" onclick="togL(this,'lev')"><div class="tb"><svg width="9" height="7" viewBox="0 0 9 7"><path d="M1 3.5l2.5 2.5L8 1" stroke="white" stroke-width="1.8" fill="none"/></svg></div><span class="ti">🛡️</span><span class="tl">Levees</span></div>
+
+      <div class="sh">Filter by County</div>
+      <div id="cpills">
+        <div class="cp on" style="background:#e3f0fb;color:#1a6aad" data-c="Bolivar" onclick="filtC(this)">Bolivar</div>
+        <div class="cp on" style="background:#f0e8f7;color:#7b3fa0" data-c="Coahoma" onclick="filtC(this)">Coahoma</div>
+        <div class="cp on" style="background:#e8f4ea;color:#2e7d4f" data-c="Issaquena" onclick="filtC(this)">Issaquena</div>
+        <div class="cp on" style="background:#fff3e0;color:#b06010" data-c="Quitman" onclick="filtC(this)">Quitman</div>
+        <div class="cp on" style="background:#fdeaea;color:#a03030" data-c="Tunica" onclick="filtC(this)">Tunica</div>
+        <div class="cp on" style="background:#e0f6f9;color:#0077a0" data-c="Washington" onclick="filtC(this)">Washington</div>
       </div>
 
-      <div class="sidebar-section">
-        <div class="sidebar-title">Visible Lakes</div>
-        <div class="stat-row"><span>Showing</span><span class="stat-val" id="stat-showing">67</span></div>
-        <div class="stat-row"><span>Natural Lakes</span><span class="stat-val" id="stat-natural">—</span></div>
-        <div class="stat-row"><span>Reservoirs</span><span class="stat-val" id="stat-reservoir">—</span></div>
-      </div>
-
-      <div class="sidebar-section">
-        <div class="sidebar-title">Study Notes</div>
-        <div style="font-size:10px; color:#a7d8d5; line-height:1.7;">
-          Lakes included meet all criteria:<br>
-          &bull; Named waterbody in USGS NHD<br>
-          &bull; Area ≥ 4 ha (≥ 10 acres)<br>
-          &bull; Located in core Delta county<br>
-          &bull; ≥ 25 km from nearest Census-defined city (pop. ≥ 5,000)<br><br>
-          <span style="color:#ffe9a8;">⚠ LIMITED DATA</span> flags lakes where one or more identifier fields are absent from source data.
-        </div>
-      </div>
+      <div class="sh">Data Sources</div>
+      <div style="font-size:10.5px;color:var(--muted);line-height:1.7;padding:0 2px">USGS NHD · USDA CDL 2023<br>MDWFP Wildlife Surveys<br>US Census 2020 Decennial<br>USACE Mississippi River<br>MS State Parks · Literature</div>
+      <div style="height:18px"></div>
     </div>
   </div>
 
-  <div id="map-container">
+  <div id="mw">
     <div id="map"></div>
+    <div id="tc"><b>MS Delta Oxbow Lakes — Phase 2 Study Sites</b><span>37 lakes · 6 counties · Grace A. Rogers · 2026</span></div>
+    <div id="cbar">Move cursor over map</div>
+    <div id="leg">
+      <h4>Legend</h4>
+      <div class="lr"><div class="ld" style="background:#2d6a9f"></div><div class="ll">Natural Lake</div></div>
+      <div class="lr"><div class="ld" style="background:#4a7c59"></div><div class="ll">Man-made / Reservoir</div></div>
+      <hr class="ldiv">
+      <div class="lr"><div class="ld" style="background:#2e7d32"></div><div class="ll">Public Access</div></div>
+      <div class="lr"><div class="ld" style="background:#888"></div><div class="ll">Access Unknown</div></div>
+      <hr class="ldiv">
+      <div style="font-size:9.5px;color:var(--muted);margin-bottom:3px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Marker Size = Lake Area</div>
+      <div class="lr"><div class="ld" style="width:8px;height:8px;background:var(--blue-mid);opacity:.7"></div><div class="ll" style="font-size:10.5px">Small &lt;50 ac</div></div>
+      <div class="lr"><div class="ld" style="width:12px;height:12px;background:var(--blue-mid);opacity:.7"></div><div class="ll" style="font-size:10.5px">Medium 50–500 ac</div></div>
+      <div class="lr"><div class="ld" style="width:17px;height:17px;background:var(--blue-mid);opacity:.7"></div><div class="ll" style="font-size:10.5px">Large &gt;500 ac</div></div>
+      <hr class="ldiv">
+      <div class="lr"><div class="ll">〰️ Rivers &nbsp; ▬ Levees</div></div>
+    </div>
   </div>
 </div>
 
-<div id="footer">
-  <span>Compilation & Map Design:</span> Grace A. Rogers — compiled and synthesized from sources below for Master’s Thesis research on Mississippi Delta Lakes.<br>
-  <span>Sources:</span>
-  U.S. Geological Survey (USGS). National Hydrography Dataset (NHD), Mississippi. Accessed 2025. https://www.usgs.gov/national-hydrography/national-hydrography-dataset &nbsp;|&nbsp;
-  U.S. Census Bureau. TIGER/Line Shapefiles 2020: Mississippi Places and Counties. https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html &nbsp;|&nbsp;
-  U.S. Census Bureau. 2020 Decennial Census: Population by Place, Mississippi. https://data.census.gov &nbsp;|&nbsp;
-  Board on Geographic Names (BGN). Geographic Names Information System (GNIS). https://www.usgs.gov/tools/geographic-names-information-system-gnis<br>
-  <span>County Boundaries:</span> U.S. county GeoJSON (FIPS) via Plotly datasets (filtered to Mississippi in-browser).
+<div id="cpanel">
+  <button id="cp-x" onclick="closeCPanel()">✕</button>
+  <div id="cp-content"></div>
 </div>
 
 <script>
-const LAKES = [{"name": "Bar Lake", "county": "Bolivar County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 31.8, "lat": 33.6749302094831, "lon": -91.06882769441742, "gnis_id": "74634.0", "nhd_id": "154112224", "nearest_city": "Greenville", "nearest_city_km": 32.3, "nearest_town": "Rosedale", "nearest_town_km": 20.0}, {"name": "Beulah Crevasse", "county": "Bolivar County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 96.5, "lat": 33.76044375773086, "lon": -91.03818166791407, "gnis_id": "667052.0", "nhd_id": "{7584F38F-3898-4100-B1EF-D3F921410E63}", "nearest_city": "Cleveland", "nearest_city_km": 28.7, "nearest_town": "Rosedale", "nearest_town_km": 10.3}, {"name": "Big Monocnoc Lake", "county": "Bolivar County", "class": "Natural Lake", "permanence": "Perennial (Unverified)", "area_acres": 22.4, "lat": 33.63811835271386, "lon": -91.09475401650069, "gnis_id": "667130.0", "nhd_id": "125450963", "nearest_city": "Greenville", "nearest_city_km": 28.4, "nearest_town": "Metcalfe", "nearest_town_km": 22.6}, {"name": "Brushy Lake", "county": "Bolivar County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 32.5, "lat": 33.62117024137867, "lon": -91.03852869935884, "gnis_id": "667703.0", "nhd_id": "125450979", "nearest_city": "Greenville", "nearest_city_km": 26.3, "nearest_town": "Metcalfe", "nearest_town_km": 19.3}, {"name": "Conservation League Lake", "county": "Bolivar County", "class": "Reservoir", "permanence": "Unknown", "area_acres": 37.1, "lat": 33.87150633585935, "lon": -90.952683720066, "gnis_id": "668772.0", "nhd_id": "125621806", "nearest_city": "Cleveland", "nearest_city_km": 25.1, "nearest_town": "Rosedale", "nearest_town_km": 7.8}, {"name": "Lake Beulah", "county": "Bolivar County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 980.2, "lat": 33.7713268768118, "lon": -91.01438241313706, "gnis_id": "75642.0", "nhd_id": "7E0347BC-2E19-44D2-9271-0E27EDE32C8B", "nearest_city": "Cleveland", "nearest_city_km": 26.6, "nearest_town": "Rosedale", "nearest_town_km": 9.2}, {"name": "Lake Bolivar", "county": "Bolivar County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 701.6, "lat": 33.6143411899108, "lon": -91.068654015077, "gnis_id": "667410.0", "nhd_id": "125450991", "nearest_city": "Greenville", "nearest_city_km": 25.6, "nearest_town": "Metcalfe", "nearest_town_km": 19.2}, {"name": "Lake Concordia", "county": "Bolivar County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 16.1, "lat": 33.933772419866635, "lon": -90.99158709062756, "gnis_id": "668757.0", "nhd_id": "52117545", "nearest_city": "Cleveland", "nearest_city_km": 32.2, "nearest_town": "Rosedale", "nearest_town_km": 9.8}, {"name": "Lake Vermilon", "county": "Bolivar County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 44.7, "lat": 33.72677616904507, "lon": -91.02475497322597, "gnis_id": "679204.0", "nhd_id": "154112044", "nearest_city": "Cleveland", "nearest_city_km": 27.5, "nearest_town": "Rosedale", "nearest_town_km": 14.0}, {"name": "Lake Whittington", "county": "Bolivar County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 3329.0, "lat": 33.67743451594541, "lon": -91.0905352359407, "gnis_id": "75221.0", "nhd_id": "154112128", "nearest_city": "Greenville", "nearest_city_km": 32.7, "nearest_town": "Rosedale", "nearest_town_km": 20.2}, {"name": "Legion Lake", "county": "Bolivar County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 32.6, "lat": 33.81731296656229, "lon": -91.00343672873532, "gnis_id": "672395.0", "nhd_id": "52117727", "nearest_city": "Cleveland", "nearest_city_km": 26.7, "nearest_town": "Rosedale", "nearest_town_km": 4.8}, {"name": "Long Hole", "county": "Bolivar County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 11.9, "lat": 33.74196384932227, "lon": -91.03060379363204, "gnis_id": "672827.0", "nhd_id": "154112040", "nearest_city": "Cleveland", "nearest_city_km": 27.9, "nearest_town": "Rosedale", "nearest_town_km": 12.3}, {"name": "Long Lake", "county": "Bolivar County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 22.4, "lat": 33.79937814538009, "lon": -91.01737298225048, "gnis_id": "75769.0", "nhd_id": "52117769", "nearest_city": "Cleveland", "nearest_city_km": 27.4, "nearest_town": "Rosedale", "nearest_town_km": 6.1}, {"name": "Old River Lake", "county": "Bolivar County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 326.9, "lat": 33.96588523454745, "lon": -90.98498090410718, "gnis_id": "75058.0", "nhd_id": "52117393", "nearest_city": "Cleveland", "nearest_city_km": 34.2, "nearest_town": "Rosedale", "nearest_town_km": 13.4}, {"name": "Porter Lake", "county": "Bolivar County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 48.3, "lat": 33.946703105720694, "lon": -90.86984839371736, "gnis_id": "676257.0", "nhd_id": "125621448", "nearest_city": "Cleveland", "nearest_city_km": 26.1, "nearest_town": "Shelby", "nearest_town_km": 9.7}, {"name": "Stamps Lake", "county": "Bolivar County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 18.5, "lat": 33.974698033439296, "lon": -90.88720963232234, "gnis_id": "678212.0", "nhd_id": "125621092", "nearest_city": "Cleveland", "nearest_city_km": 29.5, "nearest_town": "Shelby", "nearest_town_km": 11.6}, {"name": "Chute Lake", "county": "Coahoma County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 50.7, "lat": 34.43902594413053, "lon": -90.52678115880148, "gnis_id": "668489.0", "nhd_id": "123561726", "nearest_city": "Clarksdale", "nearest_city_km": 27.6, "nearest_town": "Friars Point", "nearest_town_km": 12.9}, {"name": "Desoto Lake (South)", "county": "Coahoma County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 1037.9, "lat": 34.146188763687604, "lon": -90.84726950475633, "gnis_id": "65615.0", "nhd_id": "49917229-18C2-4833-A76C-46666B471E54", "nearest_city": "Clarksdale", "nearest_city_km": 26.1, "nearest_town": "Shelby", "nearest_town_km": 23.0}, {"name": "Gunhouse Chute", "county": "Coahoma County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 19.4, "lat": 34.45026389827703, "lon": -90.53822374580068, "gnis_id": "689271.0", "nhd_id": "123561696", "nearest_city": "Clarksdale", "nearest_city_km": 28.7, "nearest_town": "Friars Point", "nearest_town_km": 12.9}, {"name": "Haynes Lake", "county": "Coahoma County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 14.9, "lat": 34.40469986557211, "lon": -90.46643985144912, "gnis_id": "671028.0", "nhd_id": "123561810", "nearest_city": "Clarksdale", "nearest_city_km": 25.3, "nearest_town": "Jonestown", "nearest_town_km": 9.3}, {"name": "Moon Lake", "county": "Coahoma County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 2510.7, "lat": 34.423225714536656, "lon": -90.52023868481729, "gnis_id": "673765.0", "nhd_id": "123561819", "nearest_city": "Clarksdale", "nearest_city_km": 26.0, "nearest_town": "Friars Point", "nearest_town_km": 12.4}, {"name": "Blue Hole", "county": "Issaquena County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 79.6, "lat": 32.94723472757891, "lon": -91.06790000222816, "gnis_id": "667294.0", "nhd_id": "{a7f48556-9cf2-4022-88fb-1bf05597465e}", "nearest_city": "Greenville", "nearest_city_km": 48.7, "nearest_town": "Rolling Fork", "nearest_town_km": 18.4}, {"name": "Carlisle Lake", "county": "Issaquena County", "class": "Natural Lake", "permanence": "Perennial (Unverified)", "area_acres": 11.1, "lat": 32.83581451275705, "lon": -91.07783604646932, "gnis_id": "668061.0", "nhd_id": "125452071", "nearest_city": "Vicksburg", "nearest_city_km": 60.4, "nearest_town": "Rolling Fork", "nearest_town_km": 20.4}, {"name": "Cypress Lake", "county": "Issaquena County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 195.0, "lat": 32.61196839419693, "lon": -90.90750376877496, "gnis_id": "669065.0", "nhd_id": "125452378", "nearest_city": "Vicksburg", "nearest_city_km": 32.8, "nearest_town": "Rolling Fork", "nearest_town_km": 33.0}, {"name": "Fitler Lake", "county": "Issaquena County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 128.6, "lat": 32.73701054598262, "lon": -91.0472650002185, "gnis_id": "670002.0", "nhd_id": "154113716", "nearest_city": "Vicksburg", "nearest_city_km": 49.1, "nearest_town": "Rolling Fork", "nearest_town_km": 24.7}, {"name": "Fivemile Lake", "county": "Issaquena County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 116.2, "lat": 32.66844398560944, "lon": -91.02503582272745, "gnis_id": "670010.0", "nhd_id": "125452258", "nearest_city": "Vicksburg", "nearest_city_km": 41.2, "nearest_town": "Rolling Fork", "nearest_town_km": 29.9}, {"name": "Goose Lake (Central)", "county": "Issaquena County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 30.2, "lat": 32.656066013743654, "lon": -91.0091955666507, "gnis_id": "670519.0", "nhd_id": "125452304", "nearest_city": "Vicksburg", "nearest_city_km": 39.4, "nearest_town": "Rolling Fork", "nearest_town_km": 30.5}, {"name": "Goose Lake (North)", "county": "Issaquena County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 20.4, "lat": 32.78435629061848, "lon": -91.04074423758291, "gnis_id": "670520.0", "nhd_id": "125452156", "nearest_city": "Vicksburg", "nearest_city_km": 53.9, "nearest_town": "Rolling Fork", "nearest_town_km": 20.5}, {"name": "Greasy Lake", "county": "Issaquena County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 101.0, "lat": 32.58291666272462, "lon": -90.76409628306082, "gnis_id": "693347.0", "nhd_id": "123835524", "nearest_city": "Vicksburg", "nearest_city_km": 31.7, "nearest_town": "Edwards", "nearest_town_km": 31.6}, {"name": "Valley Park Lake", "county": "Issaquena County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 100.3, "lat": 32.63165931818056, "lon": -90.85718548765269, "gnis_id": "695067.0", "nhd_id": "{dde517a4-1635-427d-b5eb-087e99d77af6}", "nearest_city": "Vicksburg", "nearest_city_km": 35.1, "nearest_town": "Rolling Fork", "nearest_town_km": 30.7}, {"name": "Algar Lake", "county": "Quitman County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 25.7, "lat": 34.16441556274781, "lon": -90.23204629088974, "gnis_id": "666193.0", "nhd_id": "{cbd79f02-ecd8-4257-b1bb-6c7eda11a4dd}", "nearest_city": "Clarksdale", "nearest_city_km": 31.2, "nearest_town": "Lambert", "nearest_town_km": 6.3}, {"name": "Bear Lake", "county": "Quitman County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 38.7, "lat": 34.30751913628026, "lon": -90.30609394878408, "gnis_id": "666657.0", "nhd_id": "123561925", "nearest_city": "Clarksdale", "nearest_city_km": 27.3, "nearest_town": "Marks", "nearest_town_km": 6.8}, {"name": "Blue Lake", "county": "Quitman County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 12.8, "lat": 34.13093928364158, "lon": -90.20853300244028, "gnis_id": "667310.0", "nhd_id": "{993a44f5-98de-4924-af96-2a629c916477}", "nearest_city": "Batesville", "nearest_city_km": 33.1, "nearest_town": "Crowder", "nearest_town_km": 8.0}, {"name": "Boyce Lake", "county": "Quitman County", "class": "Natural Lake", "permanence": "Perennial (Unverified)", "area_acres": 14.7, "lat": 34.075889521743875, "lon": -90.24084211196872, "gnis_id": "667488.0", "nhd_id": "{7F9DDB84-0B0A-45EF-B5EE-DA0C2B2DEF00}", "nearest_city": "Clarksdale", "nearest_city_km": 32.9, "nearest_town": "Crowder", "nearest_town_km": 14.4}, {"name": "Croudip Lake", "county": "Quitman County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 21.8, "lat": 34.1202990037454, "lon": -90.20143134387544, "gnis_id": "668986.0", "nhd_id": "124184412", "nearest_city": "Batesville", "nearest_city_km": 33.4, "nearest_town": "Crowder", "nearest_town_km": 8.3}, {"name": "Grassy Lake", "county": "Quitman County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 10.0, "lat": 34.413936612093224, "lon": -90.38433848054176, "gnis_id": "670605.0", "nhd_id": "123561784", "nearest_city": "Clarksdale", "nearest_city_km": 29.9, "nearest_town": "Jonestown", "nearest_town_km": 12.1}, {"name": "Horseshoe Lake", "county": "Quitman County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 13.9, "lat": 34.09110192729926, "lon": -90.19463408203218, "gnis_id": "671500.0", "nhd_id": "124185068", "nearest_city": "Batesville", "nearest_city_km": 35.1, "nearest_town": "Crowder", "nearest_town_km": 10.5}, {"name": "Island Lake", "county": "Quitman County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 28.0, "lat": 34.15244696091617, "lon": -90.23361303235428, "gnis_id": "671729.0", "nhd_id": "124183957", "nearest_city": "Clarksdale", "nearest_city_km": 31.2, "nearest_town": "Lambert", "nearest_town_km": 7.1}, {"name": "Little Whiting Lake", "county": "Quitman County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 19.9, "lat": 34.27947908286331, "lon": -90.3038573906038, "gnis_id": "672709.0", "nhd_id": "123561949", "nearest_city": "Clarksdale", "nearest_city_km": 26.2, "nearest_town": "Marks", "nearest_town_km": 4.1}, {"name": "Long Lake", "county": "Quitman County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 22.5, "lat": 34.4077209626109, "lon": -90.38101349663488, "gnis_id": "672840.0", "nhd_id": "123561793", "nearest_city": "Clarksdale", "nearest_city_km": 29.5, "nearest_town": "Jonestown", "nearest_town_km": 11.7}, {"name": "Oxbow Lake", "county": "Quitman County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 30.5, "lat": 34.074940932193606, "lon": -90.1982821858586, "gnis_id": "675359.0", "nhd_id": "124185492", "nearest_city": "Clarksdale", "nearest_city_km": 36.6, "nearest_town": "Crowder", "nearest_town_km": 12.2}, {"name": "Twin Lakes", "county": "Quitman County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 22.3, "lat": 34.169994362517215, "lon": -90.22086975005516, "gnis_id": "679004.0", "nhd_id": "124183842", "nearest_city": "Batesville", "nearest_city_km": 31.6, "nearest_town": "Lambert", "nearest_town_km": 6.8}, {"name": "Willow Lake", "county": "Quitman County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 21.5, "lat": 34.13656638366365, "lon": -90.22503713599367, "gnis_id": "679739.0", "nhd_id": "124184091", "nearest_city": "Clarksdale", "nearest_city_km": 32.3, "nearest_town": "Lambert", "nearest_town_km": 9.0}, {"name": "Wilson Lake", "county": "Quitman County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 22.8, "lat": 34.30886689688072, "lon": -90.29834802307708, "gnis_id": "679771.0", "nhd_id": "123561922", "nearest_city": "Clarksdale", "nearest_city_km": 28.0, "nearest_town": "Marks", "nearest_town_km": 6.6}, {"name": "Beaverdam Lake", "county": "Tunica County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 464.3, "lat": 34.62587963083559, "lon": -90.40375522282956, "gnis_id": "666735.0", "nhd_id": "123559543", "nearest_city": "Senatobia", "nearest_city_km": 39.2, "nearest_town": "Tunica", "nearest_town_km": 7.2}, {"name": "Duck Lake", "county": "Tunica County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 90.4, "lat": 34.6004736080095, "lon": -90.54417718183836, "gnis_id": "669473.0", "nhd_id": "52116293", "nearest_city": "Clarksdale", "nearest_city_km": 45.3, "nearest_town": "Tunica", "nearest_town_km": 17.8}, {"name": "Fish Lake (North)", "county": "Tunica County", "class": "Reservoir", "permanence": "Unknown", "area_acres": 11.3, "lat": 34.65052141721734, "lon": -90.26399907744776, "gnis_id": "669983.0", "nhd_id": "123558616", "nearest_city": "Senatobia", "nearest_city_km": 26.7, "nearest_town": "Tunica", "nearest_town_km": 11.5}, {"name": "Fish Lake (South)", "county": "Tunica County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 21.7, "lat": 34.490094452452425, "lon": -90.30806086145756, "gnis_id": "669981.0", "nhd_id": "123561424", "nearest_city": "Senatobia", "nearest_city_km": 33.1, "nearest_town": "Crenshaw", "nearest_town_km": 10.5}, {"name": "Fish Lake Bayou", "county": "Tunica County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 12.1, "lat": 34.8344986997796, "lon": -90.33860907748574, "gnis_id": "669989.0", "nhd_id": "2016E86C-A5DE-455F-9F4B-EA5B932BD711", "nearest_city": "Horn Lake", "nearest_city_km": 29.3, "nearest_town": "Tunica", "nearest_town_km": 16.7}, {"name": "Flower Lake", "county": "Tunica County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 395.8, "lat": 34.60199425479748, "lon": -90.50988368318411, "gnis_id": "670050.0", "nhd_id": "52116289", "nearest_city": "Clarksdale", "nearest_city_km": 45.8, "nearest_town": "Tunica", "nearest_town_km": 15.2}, {"name": "Lake Tyranza", "county": "Tunica County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 12.4, "lat": 34.56101193093144, "lon": -90.28118212796328, "gnis_id": "679018.0", "nhd_id": "123560504", "nearest_city": "Senatobia", "nearest_city_km": 28.4, "nearest_town": "Crenshaw", "nearest_town_km": 10.1}, {"name": "Mud Lake (Central)", "county": "Tunica County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 17.3, "lat": 34.61833532083727, "lon": -90.57153800830596, "gnis_id": "684861.0", "nhd_id": "52116271", "nearest_city": "Clarksdale", "nearest_city_km": 47.3, "nearest_town": "Tunica", "nearest_town_km": 19.1}, {"name": "Mud Lake (North)", "county": "Tunica County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 14.8, "lat": 34.702868235766616, "lon": -90.34235892944216, "gnis_id": "674444.0", "nhd_id": "123557384", "nearest_city": "Senatobia", "nearest_city_km": 35.1, "nearest_town": "Tunica", "nearest_town_km": 3.9}, {"name": "Mud Lake (South)", "county": "Tunica County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 28.9, "lat": 34.60330801698856, "lon": -90.53659430098904, "gnis_id": "674443.0", "nhd_id": "52116299", "nearest_city": "Clarksdale", "nearest_city_km": 45.7, "nearest_town": "Tunica", "nearest_town_km": 17.1}, {"name": "North Lake", "county": "Tunica County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 27.2, "lat": 34.60583075747923, "lon": -90.53036280619004, "gnis_id": "674951.0", "nhd_id": "{C7DB95B0-0292-4B31-941F-FFDE773555BC}", "nearest_city": "Clarksdale", "nearest_city_km": 46.0, "nearest_town": "Tunica", "nearest_town_km": 16.4}, {"name": "O K Pocket", "county": "Tunica County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 94.4, "lat": 34.62282054974249, "lon": -90.50639916015058, "gnis_id": "684863.0", "nhd_id": "5983B125-C4BE-48C2-8626-450ACE55E9D1", "nearest_city": "Clarksdale", "nearest_city_km": 48.1, "nearest_town": "Tunica", "nearest_town_km": 13.6}, {"name": "Old River Chute", "county": "Tunica County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 156.4, "lat": 34.5542296466582, "lon": -90.52371460906753, "gnis_id": "684865.0", "nhd_id": "52116341", "nearest_city": "Clarksdale", "nearest_city_km": 40.4, "nearest_town": "Tunica", "nearest_town_km": 19.8}, {"name": "Old River Lake", "county": "Tunica County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 35.1, "lat": 34.845386675864326, "lon": -90.3175846210614, "gnis_id": "675238.0", "nhd_id": "52115581", "nearest_city": "Horn Lake", "nearest_city_km": 27.1, "nearest_town": "Walls", "nearest_town_km": 16.9}, {"name": "Sandy Bayou", "county": "Tunica County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 70.2, "lat": 34.6063022343886, "lon": -90.48343078651928, "gnis_id": "684869.0", "nhd_id": "1344D403-AEB0-4963-8FF4-A9B5406F3F52", "nearest_city": "Senatobia", "nearest_city_km": 46.4, "nearest_town": "Tunica", "nearest_town_km": 13.1}, {"name": "Trout Lake", "county": "Tunica County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 23.1, "lat": 34.56394616138384, "lon": -90.30377886075549, "gnis_id": "684876.0", "nhd_id": "123560408", "nearest_city": "Senatobia", "nearest_city_km": 30.4, "nearest_town": "Crenshaw", "nearest_town_km": 12.0}, {"name": "Tunica Lake", "county": "Tunica County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 3662.7, "lat": 34.65907837692971, "lon": -90.50809307546018, "gnis_id": "690133.0", "nhd_id": "52116237", "nearest_city": "Senatobia", "nearest_city_km": 49.0, "nearest_town": "Tunica", "nearest_town_km": 12.1}, {"name": "Brushy Lake", "county": "Washington County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 12.6, "lat": 33.16867994394524, "lon": -90.93804807862976, "gnis_id": "667702.0", "nhd_id": "125451619", "nearest_city": "Greenville", "nearest_city_km": 26.3, "nearest_town": "Hollandale", "nearest_town_km": 8.0}, {"name": "Byrne Lake", "county": "Washington County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 18.5, "lat": 33.10401036806307, "lon": -91.0959828968018, "gnis_id": "667893.0", "nhd_id": "125451741", "nearest_city": "Greenville", "nearest_city_km": 31.5, "nearest_town": "Hollandale", "nearest_town_km": 24.0}, {"name": "Deer Lake", "county": "Washington County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 78.4, "lat": 33.083653060409176, "lon": -90.98981556952612, "gnis_id": "669200.0", "nhd_id": "125451751", "nearest_city": "Greenville", "nearest_city_km": 34.0, "nearest_town": "Hollandale", "nearest_town_km": 16.4}, {"name": "Lake Britton", "county": "Washington County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 54.3, "lat": 33.071375328949635, "lon": -91.10476679174272, "gnis_id": "667581.0", "nhd_id": "125451760", "nearest_city": "Greenville", "nearest_city_km": 35.2, "nearest_town": "Hollandale", "nearest_town_km": 26.2}, {"name": "Lake Jackson", "county": "Washington County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 201.8, "lat": 33.052310925745154, "lon": -91.09734120846544, "gnis_id": "671790.0", "nhd_id": "125451779", "nearest_city": "Greenville", "nearest_city_km": 37.2, "nearest_town": "Rolling Fork", "nearest_town_km": 26.1}, {"name": "Lake Washington", "county": "Washington County", "class": "Natural Lake", "permanence": "Perennial", "area_acres": 3063.9, "lat": 33.06606077049104, "lon": -91.04668769051794, "gnis_id": "679361.0", "nhd_id": "125451784", "nearest_city": "Greenville", "nearest_city_km": 35.5, "nearest_town": "Hollandale", "nearest_town_km": 21.8}];
-const CORE_FIPS = ["28011", "28027", "28055", "28119", "28125", "28133", "28143", "28151"];
+const CC = {"Bolivar":"#2d6a9f","Coahoma":"#7b3fa0","Issaquena":"#2e7d4f","Quitman":"#b06010","Tunica":"#a03030","Washington":"#0077a0"};
+const LAKES = [
+  {
+    "name": "Conservation League Lake",
+    "county_short": "Bolivar",
+    "county_full": "Bolivar County",
+    "waterbody_class": "Reservoir",
+    "ftype": "436",
+    "lat": 33.87150633585935,
+    "lon": -90.952683720066,
+    "area_acres": 37.09665789339999,
+    "area_ha": 15.012508,
+    "elevation_m": 0,
+    "permanence": "Unknown",
+    "nearest_city": "Cleveland",
+    "city_dist_km": 25.105704,
+    "city_dist_mi": 15.6,
+    "access": "Public",
+    "managing_agency": "Bolivar Co. Conservation League",
+    "boat_ramp": "Yes",
+    "fishing_access": "Yes",
+    "notes": "Conservation club lake; public access reported",
+    "nhd_id": "125621806",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.733
+  },
+  {
+    "name": "Lake Beulah",
+    "county_short": "Bolivar",
+    "county_full": "Bolivar County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 33.7713268768118,
+    "lon": -91.01438241313706,
+    "area_acres": 980.22889179955,
+    "area_ha": 396.685171,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Cleveland",
+    "city_dist_km": 26.602390200000002,
+    "city_dist_mi": 16.53,
+    "access": "Public",
+    "managing_agency": "MDWFP",
+    "boat_ramp": "Yes",
+    "fishing_access": "Yes",
+    "notes": "MDWFP WMA; public fishing access",
+    "nhd_id": "7E0347BC-2E19-44D2-9271-0E27EDE32C8B",
+    "mean_depth": 2.1,
+    "max_depth": 4.8,
+    "depth_quality": "Good",
+    "stratifies": "Unlikely",
+    "field_depth_needed": "No",
+    "dist_ag_km": 0.214
+  },
+  {
+    "name": "Lake Bolivar",
+    "county_short": "Bolivar",
+    "county_full": "Bolivar County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 33.6143411899108,
+    "lon": -91.068654015077,
+    "area_acres": 701.6110507648499,
+    "area_ha": 283.932357,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Greenville",
+    "city_dist_km": 25.5563192,
+    "city_dist_mi": 15.88,
+    "access": "Public",
+    "managing_agency": "MDWFP",
+    "boat_ramp": "Yes",
+    "fishing_access": "Yes",
+    "notes": "MDWFP managed oxbow",
+    "nhd_id": "125450991",
+    "mean_depth": 2.0,
+    "max_depth": 4.2,
+    "depth_quality": "Moderate",
+    "stratifies": "Unlikely",
+    "field_depth_needed": "No",
+    "dist_ag_km": 0.715
+  },
+  {
+    "name": "Lake Vermilon",
+    "county_short": "Bolivar",
+    "county_full": "Bolivar County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 33.72677616904507,
+    "lon": -91.02475497322597,
+    "area_acres": 44.7309816947,
+    "area_ha": 18.102014,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Cleveland",
+    "city_dist_km": 27.4714338,
+    "city_dist_mi": 17.07,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Verify ownership \u2014 likely private ag land surrounding",
+    "nhd_id": "154112044",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.072
+  },
+  {
+    "name": "Lake Whittington",
+    "county_short": "Bolivar",
+    "county_full": "Bolivar County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 33.67743451594541,
+    "lon": -91.0905352359407,
+    "area_acres": 3329.02298138715,
+    "area_ha": 1347.209883,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Greenville",
+    "city_dist_km": 32.7178822,
+    "city_dist_mi": 20.33,
+    "access": "Public",
+    "managing_agency": "USACE / MDWFP",
+    "boat_ramp": "Yes",
+    "fishing_access": "Yes",
+    "notes": "USACE managed; public boat ramp on west bank",
+    "nhd_id": "154112128",
+    "mean_depth": 2.4,
+    "max_depth": 5.5,
+    "depth_quality": "Good",
+    "stratifies": "Unlikely",
+    "field_depth_needed": "No",
+    "dist_ag_km": 0.578
+  },
+  {
+    "name": "Legion Lake",
+    "county_short": "Bolivar",
+    "county_full": "Bolivar County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 33.81731296656229,
+    "lon": -91.00343672873532,
+    "area_acres": 32.61786,
+    "area_ha": 13.2,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Cleveland",
+    "city_dist_km": 26.682857199999997,
+    "city_dist_mi": 16.58,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Small oxbow; verify access",
+    "nhd_id": "52117727",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.402
+  },
+  {
+    "name": "Old River Lake",
+    "county_short": "Bolivar",
+    "county_full": "Bolivar County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 33.96588523454745,
+    "lon": -90.98498090410718,
+    "area_acres": 326.91991499999995,
+    "area_ha": 132.29999999999998,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Cleveland",
+    "city_dist_km": 34.198475,
+    "city_dist_mi": 21.25,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Tunica Co. oxbow; verify \u2014 different from Bolivar Old River Lake",
+    "nhd_id": "52117393",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.0
+  },
+  {
+    "name": "Porter Lake",
+    "county_short": "Bolivar",
+    "county_full": "Bolivar County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 33.946703105720694,
+    "lon": -90.86984839371736,
+    "area_acres": 48.34448459645,
+    "area_ha": 19.564349,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Cleveland",
+    "city_dist_km": 26.055214600000003,
+    "city_dist_mi": 16.19,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Verify \u2014 may be private",
+    "nhd_id": "125621448",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.977
+  },
+  {
+    "name": "Desoto Lake (South)",
+    "county_short": "Coahoma",
+    "county_full": "Coahoma County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 34.146188763687604,
+    "lon": -90.84726950475633,
+    "area_acres": 1037.9383989068,
+    "area_ha": 420.039416,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Clarksdale",
+    "city_dist_km": 26.103494799999996,
+    "city_dist_mi": 16.22,
+    "access": "Public",
+    "managing_agency": "MDWFP / USACE",
+    "boat_ramp": "Yes",
+    "fishing_access": "Yes",
+    "notes": "Public access; part of Desoto Lake complex",
+    "nhd_id": "49917229-18C2-4833-A76C-46666B471E54",
+    "mean_depth": 2.8,
+    "max_depth": 6.1,
+    "depth_quality": "Moderate",
+    "stratifies": "Possible",
+    "field_depth_needed": "No",
+    "dist_ag_km": 0.417
+  },
+  {
+    "name": "Haynes Lake",
+    "county_short": "Coahoma",
+    "county_full": "Coahoma County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 34.40469986557211,
+    "lon": -90.46643985144912,
+    "area_acres": 14.9356538467,
+    "area_ha": 6.0442540000000005,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Clarksdale",
+    "city_dist_km": 25.347105,
+    "city_dist_mi": 15.75,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Small lake; verify ownership",
+    "nhd_id": "123561810",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.156
+  },
+  {
+    "name": "Moon Lake",
+    "county_short": "Coahoma",
+    "county_full": "Coahoma County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 34.423225714536656,
+    "lon": -90.52023868481729,
+    "area_acres": 2510.6733658236,
+    "area_ha": 1016.035032,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Clarksdale",
+    "city_dist_km": 25.9747476,
+    "city_dist_mi": 16.14,
+    "access": "Public",
+    "managing_agency": "MDWFP",
+    "boat_ramp": "Yes",
+    "fishing_access": "Yes",
+    "notes": "MDWFP WMA; multiple public ramps; well-documented",
+    "nhd_id": "123561819",
+    "mean_depth": 3.2,
+    "max_depth": 7.3,
+    "depth_quality": "Good",
+    "stratifies": "Possible",
+    "field_depth_needed": "No",
+    "dist_ag_km": 0.576
+  },
+  {
+    "name": "Blue Hole",
+    "county_short": "Issaquena",
+    "county_full": "Issaquena County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 32.94723472757891,
+    "lon": -91.06790000222816,
+    "area_acres": 79.61025522585,
+    "area_ha": 32.217177,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Greenville",
+    "city_dist_km": 48.698628400000004,
+    "city_dist_mi": 30.26,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Remote; verify \u2014 likely private timber/ag land",
+    "nhd_id": "{a7f48556-9cf2-4022-88fb-1bf05597465e}",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.0
+  },
+  {
+    "name": "Carlisle Lake",
+    "county_short": "Issaquena",
+    "county_full": "Issaquena County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 32.83581451275705,
+    "lon": -91.07783604646932,
+    "area_acres": 11.09240260015,
+    "area_ha": 4.488943,
+    "elevation_m": 0,
+    "permanence": "Perennial (Unverified)",
+    "nearest_city": "Vicksburg",
+    "city_dist_km": 60.38243680000001,
+    "city_dist_mi": 37.52,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Very small (11 ac); likely private",
+    "nhd_id": "125452071",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.0
+  },
+  {
+    "name": "Cypress Lake",
+    "county_short": "Issaquena",
+    "county_full": "Issaquena County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 32.61196839419693,
+    "lon": -90.90750376877496,
+    "area_acres": 195.04147642735,
+    "area_ha": 78.930607,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Vicksburg",
+    "city_dist_km": 32.830535999999995,
+    "city_dist_mi": 20.4,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Issaquena Co. is sparsely populated; verify",
+    "nhd_id": "125452378",
+    "mean_depth": 1.8,
+    "max_depth": 3.5,
+    "depth_quality": "Low",
+    "stratifies": "Unlikely",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.452
+  },
+  {
+    "name": "Fitler Lake",
+    "county_short": "Issaquena",
+    "county_full": "Issaquena County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 32.73701054598262,
+    "lon": -91.0472650002185,
+    "area_acres": 128.6347184192,
+    "area_ha": 52.056704,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Vicksburg",
+    "city_dist_km": 49.0526832,
+    "city_dist_mi": 30.48,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Near Fitler community; verify access road",
+    "nhd_id": "154113716",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.553
+  },
+  {
+    "name": "Fivemile Lake",
+    "county_short": "Issaquena",
+    "county_full": "Issaquena County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 32.66844398560944,
+    "lon": -91.02503582272745,
+    "area_acres": 116.15471251785,
+    "area_ha": 47.006217,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Vicksburg",
+    "city_dist_km": 41.1508238,
+    "city_dist_mi": 25.57,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Verify",
+    "nhd_id": "125452258",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.0
+  },
+  {
+    "name": "Goose Lake (North)",
+    "county_short": "Issaquena",
+    "county_full": "Issaquena County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 32.78435629061848,
+    "lon": -91.04074423758291,
+    "area_acres": 20.37893962085,
+    "area_ha": 8.247076999999999,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Vicksburg",
+    "city_dist_km": 53.91289,
+    "city_dist_mi": 33.5,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Small (20 ac); verify",
+    "nhd_id": "125452156",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.057
+  },
+  {
+    "name": "Greasy Lake",
+    "county_short": "Issaquena",
+    "county_full": "Issaquena County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 32.58291666272462,
+    "lon": -90.76409628306082,
+    "area_acres": 101.03987295145,
+    "area_ha": 40.889449,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Vicksburg",
+    "city_dist_km": 31.7200914,
+    "city_dist_mi": 19.71,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Verify ownership",
+    "nhd_id": "123835524",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.14
+  },
+  {
+    "name": "Valley Park Lake",
+    "county_short": "Issaquena",
+    "county_full": "Issaquena County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 32.63165931818056,
+    "lon": -90.85718548765269,
+    "area_acres": 100.3419915973,
+    "area_ha": 40.607026000000005,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Vicksburg",
+    "city_dist_km": 35.083612,
+    "city_dist_mi": 21.8,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Near Valley Park; verify public access",
+    "nhd_id": "{dde517a4-1635-427d-b5eb-087e99d77af6}",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.0
+  },
+  {
+    "name": "Bear Lake",
+    "county_short": "Quitman",
+    "county_full": "Quitman County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 34.30751913628026,
+    "lon": -90.30609394878408,
+    "area_acres": 38.67109481405,
+    "area_ha": 15.649661,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Clarksdale",
+    "city_dist_km": 27.3265932,
+    "city_dist_mi": 16.98,
+    "access": "Public",
+    "managing_agency": "MDWFP",
+    "boat_ramp": "Yes",
+    "fishing_access": "Yes",
+    "notes": "MDWFP WMA \u2014 Bear Lake WMA; well documented",
+    "nhd_id": "123561925",
+    "mean_depth": 2.3,
+    "max_depth": 4.9,
+    "depth_quality": "Good",
+    "stratifies": "Unlikely",
+    "field_depth_needed": "No",
+    "dist_ag_km": 2.539
+  },
+  {
+    "name": "Island Lake",
+    "county_short": "Quitman",
+    "county_full": "Quitman County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 34.15244696091617,
+    "lon": -90.23361303235428,
+    "area_acres": 27.9823085788,
+    "area_ha": 11.324056,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Clarksdale",
+    "city_dist_km": 31.2051026,
+    "city_dist_mi": 19.39,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Verify",
+    "nhd_id": "124183957",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.15
+  },
+  {
+    "name": "Long Lake",
+    "county_short": "Quitman",
+    "county_full": "Quitman County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 34.4077209626109,
+    "lon": -90.38101349663488,
+    "area_acres": 22.465007444,
+    "area_ha": 9.09128,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Clarksdale",
+    "city_dist_km": 29.450922000000002,
+    "city_dist_mi": 18.3,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Verify",
+    "nhd_id": "123561793",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.0
+  },
+  {
+    "name": "Oxbow Lake",
+    "county_short": "Quitman",
+    "county_full": "Quitman County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 34.074940932193606,
+    "lon": -90.1982821858586,
+    "area_acres": 30.5368059373,
+    "area_ha": 12.357826,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Clarksdale",
+    "city_dist_km": 36.5963916,
+    "city_dist_mi": 22.74,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Verify \u2014 common name, confirm identity",
+    "nhd_id": "124185492",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.0
+  },
+  {
+    "name": "Beaverdam Lake",
+    "county_short": "Tunica",
+    "county_full": "Tunica County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 34.62587963083559,
+    "lon": -90.40375522282956,
+    "area_acres": 464.34845048305,
+    "area_ha": 187.915441,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Senatobia",
+    "city_dist_km": 39.1713356,
+    "city_dist_mi": 24.34,
+    "access": "Public",
+    "managing_agency": "MDWFP",
+    "boat_ramp": "Yes",
+    "fishing_access": "Yes",
+    "notes": "MDWFP WMA access reported",
+    "nhd_id": "123559543",
+    "mean_depth": 2.6,
+    "max_depth": 5.8,
+    "depth_quality": "Moderate",
+    "stratifies": "Possible",
+    "field_depth_needed": "No",
+    "dist_ag_km": 0.0
+  },
+  {
+    "name": "Fish Lake (North)",
+    "county_short": "Tunica",
+    "county_full": "Tunica County",
+    "waterbody_class": "Reservoir",
+    "ftype": "436",
+    "lat": 34.65052141721734,
+    "lon": -90.26399907744776,
+    "area_acres": 11.25468139575,
+    "area_ha": 4.554615,
+    "elevation_m": 0,
+    "permanence": "Unknown",
+    "nearest_city": "Senatobia",
+    "city_dist_km": 26.7472308,
+    "city_dist_mi": 16.62,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Reservoir (11 ac); likely private impoundment",
+    "nhd_id": "123558616",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.0
+  },
+  {
+    "name": "Fish Lake (South)",
+    "county_short": "Tunica",
+    "county_full": "Tunica County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 34.490094452452425,
+    "lon": -90.30806086145756,
+    "area_acres": 21.72812303665,
+    "area_ha": 8.793073,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Senatobia",
+    "city_dist_km": 33.1041238,
+    "city_dist_mi": 20.57,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Verify \u2014 isolated location",
+    "nhd_id": "123561424",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 4.015
+  },
+  {
+    "name": "Flower Lake",
+    "county_short": "Tunica",
+    "county_full": "Tunica County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 34.60199425479748,
+    "lon": -90.50988368318411,
+    "area_acres": 395.8154478498,
+    "area_ha": 160.181076,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Clarksdale",
+    "city_dist_km": 45.785723,
+    "city_dist_mi": 28.45,
+    "access": "Public",
+    "managing_agency": "MDWFP",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Yes",
+    "notes": "MDWFP managed; confirm ramp",
+    "nhd_id": "52116289",
+    "mean_depth": 2.2,
+    "max_depth": 4.5,
+    "depth_quality": "Low",
+    "stratifies": "Unlikely",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 1.33
+  },
+  {
+    "name": "Mud Lake (Central)",
+    "county_short": "Tunica",
+    "county_full": "Tunica County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 34.61833532083727,
+    "lon": -90.57153800830596,
+    "area_acres": 17.29735,
+    "area_ha": 7.000000000000001,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Clarksdale",
+    "city_dist_km": 47.2663158,
+    "city_dist_mi": 29.37,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Verify",
+    "nhd_id": "52116271",
+    "mean_depth": 1.5,
+    "max_depth": 2.8,
+    "depth_quality": "Low",
+    "stratifies": "Unlikely",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 2.306
+  },
+  {
+    "name": "Mud Lake (North)",
+    "county_short": "Tunica",
+    "county_full": "Tunica County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 34.702868235766616,
+    "lon": -90.34235892944216,
+    "area_acres": 14.7772941364,
+    "area_ha": 5.980168,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Senatobia",
+    "city_dist_km": 35.1157988,
+    "city_dist_mi": 21.82,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Verify",
+    "nhd_id": "123557384",
+    "mean_depth": 1.5,
+    "max_depth": 2.8,
+    "depth_quality": "Low",
+    "stratifies": "Unlikely",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 1.122
+  },
+  {
+    "name": "Old River Chute",
+    "county_short": "Tunica",
+    "county_full": "Tunica County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 34.5542296466582,
+    "lon": -90.52371460906753,
+    "area_acres": 156.417465,
+    "area_ha": 63.3,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Clarksdale",
+    "city_dist_km": 40.3622472,
+    "city_dist_mi": 25.08,
+    "access": "Public",
+    "managing_agency": "USACE",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Yes",
+    "notes": "USACE floodway corridor",
+    "nhd_id": "52116341",
+    "mean_depth": 3.0,
+    "max_depth": 6.0,
+    "depth_quality": "Low",
+    "stratifies": "Possible",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.602
+  },
+  {
+    "name": "Old River Lake",
+    "county_short": "Tunica",
+    "county_full": "Tunica County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 34.845386675864326,
+    "lon": -90.3175846210614,
+    "area_acres": 35.08891,
+    "area_ha": 14.2,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Horn Lake",
+    "city_dist_km": 27.085192199999998,
+    "city_dist_mi": 16.83,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Tunica Co. oxbow; verify \u2014 different from Bolivar Old River Lake",
+    "nhd_id": "52115581",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 1.126
+  },
+  {
+    "name": "Trout Lake",
+    "county_short": "Tunica",
+    "county_full": "Tunica County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 34.56394616138384,
+    "lon": -90.30377886075549,
+    "area_acres": 23.11592896395,
+    "area_ha": 9.354699,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Senatobia",
+    "city_dist_km": 30.3843392,
+    "city_dist_mi": 18.88,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Verify access",
+    "nhd_id": "123560408",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 3.324
+  },
+  {
+    "name": "Tunica Lake",
+    "county_short": "Tunica",
+    "county_full": "Tunica County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 34.65907837692971,
+    "lon": -90.50809307546018,
+    "area_acres": 3662.65602263265,
+    "area_ha": 1482.226593,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Senatobia",
+    "city_dist_km": 48.9883096,
+    "city_dist_mi": 30.44,
+    "access": "Public",
+    "managing_agency": "MDWFP / USACE",
+    "boat_ramp": "Yes",
+    "fishing_access": "Yes",
+    "notes": "Largest lake in study; public ramp; MDWFP stocked",
+    "nhd_id": "52116237",
+    "mean_depth": 3.5,
+    "max_depth": 8.2,
+    "depth_quality": "Good",
+    "stratifies": "Yes",
+    "field_depth_needed": "No",
+    "dist_ag_km": 1.134
+  },
+  {
+    "name": "Brushy Lake",
+    "county_short": "Washington",
+    "county_full": "Washington County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 33.16867994394524,
+    "lon": -90.93804807862976,
+    "area_acres": 12.5967852533,
+    "area_ha": 5.097746,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Greenville",
+    "city_dist_km": 26.2644288,
+    "city_dist_mi": 16.32,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Small (13 ac); verify",
+    "nhd_id": "125451619",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.877
+  },
+  {
+    "name": "Deer Lake",
+    "county_short": "Washington",
+    "county_full": "Washington County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 33.083653060409176,
+    "lon": -90.98981556952612,
+    "area_acres": 78.40761990135,
+    "area_ha": 31.730487,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Greenville",
+    "city_dist_km": 34.0053542,
+    "city_dist_mi": 21.13,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Verify",
+    "nhd_id": "125451751",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.0
+  },
+  {
+    "name": "Lake Britton",
+    "county_short": "Washington",
+    "county_full": "Washington County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 33.071375328949635,
+    "lon": -91.10476679174272,
+    "area_acres": 54.3250804247,
+    "area_ha": 21.984614,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Greenville",
+    "city_dist_km": 35.228452600000004,
+    "city_dist_mi": 21.89,
+    "access": "Unknown",
+    "managing_agency": "Unknown",
+    "boat_ramp": "Unknown",
+    "fishing_access": "Unknown",
+    "notes": "Verify ownership",
+    "nhd_id": "125451760",
+    "mean_depth": null,
+    "max_depth": null,
+    "depth_quality": "Unknown",
+    "stratifies": "Unknown",
+    "field_depth_needed": "Yes",
+    "dist_ag_km": 0.0
+  },
+  {
+    "name": "Lake Washington",
+    "county_short": "Washington",
+    "county_full": "Washington County",
+    "waterbody_class": "Natural Lake",
+    "ftype": "390",
+    "lat": 33.06606077049104,
+    "lon": -91.04668769051794,
+    "area_acres": 3063.8636054512504,
+    "area_ha": 1239.9035250000002,
+    "elevation_m": 0,
+    "permanence": "Perennial",
+    "nearest_city": "Greenville",
+    "city_dist_km": 35.4698536,
+    "city_dist_mi": 22.04,
+    "access": "Public",
+    "managing_agency": "MS State Park / MDWFP",
+    "boat_ramp": "Yes",
+    "fishing_access": "Yes",
+    "notes": "Lake Washington State Park; full public facilities",
+    "nhd_id": "125451784",
+    "mean_depth": 3.8,
+    "max_depth": 9.1,
+    "depth_quality": "Good",
+    "stratifies": "Yes",
+    "field_depth_needed": "No",
+    "dist_ag_km": 0.564
+  }
+];
 
-const COLOR = {
-  'Natural Lake': '#2b7bbd',
-  'Reservoir':    '#c06c4a'
+const map = L.map('map',{center:[33.8,-90.7],zoom:8,zoomControl:false});
+L.control.zoom({position:'topright'}).addTo(map);
+
+const baseMaps = {
+  "🗺 Light":L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© CartoDB',maxZoom:19}),
+  "🗺 OSM":L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:19}),
+  "🛰 Satellite":L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri',maxZoom:19}),
+  "📐 Topo":L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/USA_Topo_Maps/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri',maxZoom:17}),
 };
+baseMaps["🗺 Light"].addTo(map);
+L.control.layers(baseMaps,{},{position:'topright',collapsed:true}).addTo(map);
 
-// Count by county
-const countyCounts = {};
-LAKES.forEach(l => {
-  countyCounts[l.county] = (countyCounts[l.county] || 0) + 1;
+// Measure tool
+L.control.measure({position:'topright',primaryLengthUnit:'kilometers',secondaryLengthUnit:'miles',primaryAreaUnit:'sqkilometers',activeColor:'#2d6a9f',completedColor:'#4a7c59'}).addTo(map);
+
+// Fullscreen
+const fsCtrl = L.control({position:'topright'});
+fsCtrl.onAdd=function(){const d=L.DomUtil.create('div','leaflet-bar leaflet-control');d.innerHTML='<a href="#" title="Fullscreen" style="font-size:13px;line-height:26px">⛶</a>';d.onclick=function(e){e.preventDefault();!document.fullscreenElement?document.documentElement.requestFullscreen():document.exitFullscreen()};L.DomEvent.disableClickPropagation(d);return d};
+fsCtrl.addTo(map);
+
+// Mouse coordinates
+map.on('mousemove',function(e){document.getElementById('cbar').textContent='Lat '+e.latlng.lat.toFixed(4)+'   Lon '+e.latlng.lng.toFixed(4)});
+
+// MiniMap (simple overview rectangle)
+const miniTile=L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
+try{new L.Control.MiniMap(miniTile,{toggleDisplay:true,minimized:false,position:'bottomright',width:130,height:90}).addTo(map);}catch(e){}
+
+// COUNTY BOUNDARIES
+const coData={
+  "Bolivar":[[34.2,-91.15],[34.2,-90.4],[33.6,-90.4],[33.6,-91.15]],
+  "Coahoma":[[34.5,-90.8],[34.5,-90.1],[34.15,-90.1],[34.15,-90.8]],
+  "Issaquena":[[32.95,-91.1],[32.95,-90.7],[32.5,-90.7],[32.5,-91.1]],
+  "Quitman":[[34.2,-90.6],[34.2,-89.95],[33.85,-89.95],[33.85,-90.6]],
+  "Tunica":[[34.8,-90.6],[34.8,-90.0],[34.4,-90.0],[34.4,-90.6]],
+  "Washington":[[33.4,-91.2],[33.4,-90.6],[33.0,-90.6],[33.0,-91.2]],
+};
+const coLayer=L.layerGroup();
+Object.entries(coData).forEach(([n,c])=>{
+  const col=CC[n]||'#888';
+  const p=L.polygon(c,{color:col,weight:2.5,fillColor:col,fillOpacity:.04,dashArray:'6,4'});
+  p.bindTooltip('<b style="font-family:Barlow Condensed,sans-serif">'+n+' County</b>',{sticky:true});
+  p.on('mouseover',function(){this.setStyle({fillOpacity:.1,weight:3})});
+  p.on('mouseout', function(){this.setStyle({fillOpacity:.04,weight:2.5})});
+  p.on('click',function(){showCPanel(n)});
+  p.addTo(coLayer);
 });
-const countyOrder = Object.keys(countyCounts).sort();
+coLayer.addTo(map);
 
-// Map init
-const map = L.map('map', {
-  center: [33.8, -90.7],
-  zoom: 8,
-  zoomControl: true
-});
+// DELTA BOUNDARY
+const delLayer=L.layerGroup([L.polygon([[34.9,-90.85],[34.85,-90.1],[34.5,-89.9],[34.0,-90.0],[33.5,-90.2],[33.0,-90.55],[32.4,-90.85],[32.3,-91.2],[32.7,-91.3],[33.2,-91.35],[33.8,-91.3],[34.3,-91.2],[34.9,-90.85]],{color:'#2c5f2e',weight:3,fillOpacity:0,dashArray:'10,6'}).bindTooltip('Mississippi Alluvial Plain Boundary')]);
+delLayer.addTo(map);
 
-// Basemap: CARTO Voyager (clearer roads, blue water, green parks/landmarks)
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-  maxZoom: 19,
-  className: 'basemap-tiles'
-}).addTo(map);
+// RIVERS
+const rivLayer=L.layerGroup([
+  L.polyline([[34.9,-90.1],[34.6,-90.15],[34.3,-90.35],[34.0,-90.55],[33.7,-90.75],[33.4,-91.0],[33.1,-91.2],[32.8,-91.25],[32.4,-91.05]],{color:'#1a6aad',weight:4,opacity:.7}).bindTooltip('Mississippi River'),
+  L.polyline([[34.1,-90.35],[33.8,-90.5],[33.5,-90.65],[33.2,-90.85],[32.9,-91.0],[32.7,-90.85]],{color:'#4a90c4',weight:2.5,opacity:.65}).bindTooltip('Yazoo River'),
+  L.polyline([[34.7,-90.3],[34.5,-90.25],[34.3,-90.4],[34.1,-90.45]],{color:'#6aabcf',weight:2,opacity:.6}).bindTooltip('Coldwater River'),
+  L.polyline([[34.3,-90.5],[34.0,-90.55],[33.7,-90.62],[33.4,-90.7],[33.1,-90.8]],{color:'#6aabcf',weight:2,opacity:.6}).bindTooltip('Sunflower River'),
+]);
+rivLayer.addTo(map);
 
-// COUNTY SHADING + OUTLINES
-async function addCountyLayer() {
-  try {
-    const url = 'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json';
-    const resp = await fetch(url);
-    const usCounties = await resp.json();
+// LEVEES
+const levStyle={color:'#8B4513',weight:2.5,opacity:.55,dashArray:'4,3'};
+const levLayer=L.layerGroup([
+  L.polyline([[34.85,-90.5],[34.5,-90.45],[34.1,-90.5],[33.7,-90.65],[33.3,-90.85],[32.8,-91.0],[32.4,-90.95]],levStyle).bindTooltip('East Levee — Mississippi River'),
+  L.polyline([[34.85,-90.95],[34.5,-90.92],[34.1,-90.98],[33.7,-91.1],[33.3,-91.2],[32.8,-91.28],[32.4,-91.1]],levStyle).bindTooltip('West Levee — Mississippi River'),
+]);
+levLayer.addTo(map);
 
-    // Mississippi counties have FIPS starting with "28"
-    const msFeatures = usCounties.features.filter(f => String(f.id).startsWith('28'));
-    const msGeo = { type: "FeatureCollection", features: msFeatures };
+// HEATMAP
+const heatLayer=L.heatLayer(LAKES.map(l=>[l.lat,l.lon,0.5+l.area_acres/4000]),{radius:35,blur:25,maxZoom:10,gradient:{0.2:'#a8d5e2',0.5:'#4a90c4',0.8:'#1a3a5c'}});
 
-    function styleCounty(feature) {
-      const fips = String(feature.id);
-      const isCore = CORE_FIPS.includes(fips);
-
-      return {
-        fillColor: isCore ? '#6fa3d8' : '#a8c6e8',
-        fillOpacity: isCore ? 0.22 : 0.12,
-        color: isCore ? '#2a4f73' : '#5a7d9a',
-        weight: isCore ? 2.0 : 1.0,
-        opacity: isCore ? 0.95 : 0.70
-      };
-    }
-
-    L.geoJSON(msGeo, {
-      style: styleCounty,
-      interactive: false
-    }).addTo(map);
-
-  } catch (e) {
-    console.warn('County layer failed to load:', e);
-  }
+// POPUP HELPERS
+function dBar(m,x){
+  if(!m)return'<span style="color:#aaa;font-size:11px">No data — field measurement needed</span>';
+  const p=Math.min(m/5*100,100),col=m>3?'#c0392b':m>2?'#e67e22':'#27ae60';
+  return`<div class="dbg"><div class="dbf" style="width:${p}%;background:${col}"></div></div><div style="font-size:11px;color:#555">Mean <b>${m}m</b> · Max <b>${x}m</b></div>`;
 }
-addCountyLayer();
-
-// MARKERS
-const allMarkers = [];
-
-LAKES.forEach(lake => {
-  const color = COLOR[lake.class] || '#777';
-
-  const icon = L.divIcon({
-    className: '',
-    html: `<div style="
-      width:14px; height:14px; border-radius:50%;
-      background:${color};
-      border:2px solid rgba(20,20,20,0.70);
-      box-shadow:0 0 8px rgba(0,0,0,0.35);
-    "></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
-    popupAnchor: [0, -10]
-  });
-
-  const gnisBad = (!lake.gnis_id || lake.gnis_id === 'N/A' || String(lake.gnis_id).toLowerCase() === 'nan');
-  const nhdBad  = (!lake.nhd_id  || lake.nhd_id  === 'N/A' || String(lake.nhd_id).toLowerCase() === 'nan');
-  const limited = gnisBad || nhdBad;
-
-  const badgeClass = (lake.class === 'Reservoir') ? 'badge-reservoir' : 'badge-natural';
-
-  const popupHtml = `
-    <div class="popup-title">${lake.name}</div>
-    <div class="popup-county">${lake.county}</div>
-    <div><span class="popup-badge ${badgeClass}">${lake.class}</span></div>
-    <div class="popup-row"><span class="popup-label">Hydrologic Permanence</span><span class="popup-val">${lake.permanence}</span></div>
-    <div class="popup-row"><span class="popup-label">Area</span><span class="popup-val">${lake.area_acres.toLocaleString()} acres</span></div>
-    <div class="popup-row"><span class="popup-label">Nearest City</span><span class="popup-val">${lake.nearest_city} (${lake.nearest_city_km} km)</span></div>
-    <div class="popup-row"><span class="popup-label">Nearest Town</span><span class="popup-val">${lake.nearest_town} (${lake.nearest_town_km} km)</span></div>
-    <div class="popup-row"><span class="popup-label">GNIS ID</span><span class="popup-val">${lake.gnis_id}</span></div>
-    <div class="popup-row"><span class="popup-label">NHD Permanent ID</span><span class="popup-val" style="font-size:10px">${lake.nhd_id}</span></div>
-    ${limited ? '<div class="limited-data-banner">⚠ LIMITED DATA — One or more identifier fields absent from source</div>' : ''}
-    <div class="popup-coords">${lake.lat.toFixed(5)}, ${lake.lon.toFixed(5)}</div>
-  `;
-
-  const marker = L.marker([lake.lat, lake.lon], {icon})
-    .bindPopup(popupHtml, {className: 'custom-popup', maxWidth: 280});
-
-  allMarkers.push({ marker: marker, county: lake.county, class: lake.class });
-  marker.addTo(map);
-});
-
-// SIDEBAR CHECKBOXES
-const container = document.getElementById('county-checkboxes');
-countyOrder.forEach(county => {
-  const shortName = county.replace(' County', '');
-  const div = document.createElement('div');
-  div.className = 'county-toggle';
-  div.innerHTML = `
-    <input type="checkbox" id="chk-${shortName}" checked onchange="filterMarkers()">
-    <label for="chk-${shortName}" style="cursor:pointer">${shortName}</label>
-    <span class="county-count">${countyCounts[county]}</span>
-  `;
-  container.appendChild(div);
-});
-
-function filterMarkers() {
-  const active = {};
-  countyOrder.forEach(county => {
-    const short = county.replace(' County', '');
-    const chk = document.getElementById('chk-' + short);
-    active[county] = chk ? chk.checked : true;
-  });
-
-  let showing = 0, natural = 0, reservoir = 0;
-
-  allMarkers.forEach(obj => {
-    const marker = obj.marker;
-    const county = obj.county;
-    const cls = obj.class;
-
-    if (active[county]) {
-      marker.addTo(map);
-      showing++;
-      if (cls === 'Natural Lake') natural++;
-      else if (cls === 'Reservoir') reservoir++;
-    } else {
-      map.removeLayer(marker);
-    }
-  });
-
-  document.getElementById('stat-showing').textContent = showing;
-  document.getElementById('stat-natural').textContent = natural;
-  document.getElementById('stat-reservoir').textContent = reservoir;
+function agBar(d){
+  if(d===null||d===undefined)return'<span style="color:#aaa;font-size:11px">Unknown</span>';
+  const p=Math.min(d/5*100,100),col=d<0.5?'#27ae60':d<2?'#e67e22':'#c0392b',lbl=d<0.05?'Adjacent':d.toFixed(3)+' km';
+  return`<div class="agbg"><div class="agbf" style="width:${Math.max(p,3)}%;background:${col}"></div></div><div style="font-size:11px;color:#555"><b>${lbl}</b> to nearest ag zone</div>`;
 }
-filterMarkers();
-
-let allSelected = true;
-function toggleAll() {
-  allSelected = !allSelected;
-  countyOrder.forEach(county => {
-    const short = county.replace(' County', '');
-    const chk = document.getElementById('chk-' + short);
-    if (chk) chk.checked = allSelected;
-  });
-  document.getElementById('select-all-btn').textContent = allSelected ? 'Deselect All' : 'Select All';
-  filterMarkers();
+function mkPopup(l){
+  const cc=CC[l.county_short]||'#2d6a9f';
+  const ab=l.access==='Public'?'<span class="badge b-pub">🔓 Public</span>':'<span class="badge b-unk">❓ Unknown</span>';
+  const tb=l.waterbody_class==='Reservoir'?'<span class="badge b-ant">🔧 Man-made</span>':'<span class="badge b-nat">🔵 Natural Lake</span>';
+  return`<div class="lp">
+    <div class="ph" style="background:${cc};color:white"><h3>${l.name}</h3><div class="sub">${l.county_short} County · ${l.permanence}</div></div>
+    <div class="pb">
+      <div class="pphoto">📷 Photo — field collection pending</div>
+      <div style="margin-bottom:7px">${tb} ${ab}</div>
+      <div class="psec">
+        <div class="psh">Location & Size</div>
+        <div class="pg">
+          <div><div class="pgl">Surface Area</div><div class="pgv">${l.area_acres.toFixed(1)} ac</div></div>
+          <div><div class="pgl">Hectares</div><div class="pgv">${l.area_ha.toFixed(1)} ha</div></div>
+          <div><div class="pgl">Elevation</div><div class="pgv">${l.elevation_m} m</div></div>
+          <div><div class="pgl">Hydrology</div><div class="pgv">${l.permanence}</div></div>
+        </div>
+        <div class="coord">📍 ${l.lat.toFixed(5)}, ${l.lon.toFixed(5)}</div>
+      </div>
+      <div class="psec">
+        <div class="psh">Nearest City</div>
+        <div style="font-size:13px"><b>${l.nearest_city}</b> <span style="color:#999">${l.city_dist_km.toFixed(1)} km · ${l.city_dist_mi.toFixed(1)} mi</span></div>
+      </div>
+      <div class="psec">
+        <div class="psh">Depth Data</div>
+        ${dBar(l.mean_depth,l.max_depth)}
+        <div style="font-size:10.5px;color:#999;margin-top:2px">Stratification: ${l.stratifies||'Unknown'} · Quality: ${l.depth_quality||'Unknown'}</div>
+      </div>
+      <div class="psec">
+        <div class="psh">Distance to Agriculture</div>
+        ${agBar(l.dist_ag_km)}
+      </div>
+      <div class="psec">
+        <div class="psh">Land Management</div>
+        <div style="font-size:12.5px"><b>${l.managing_agency||'Unknown'}</b><br>
+        <span style="color:#999;font-size:11px">🚤 Boat ramp: ${l.boat_ramp||'Unknown'} · 🎣 Fishing: ${l.fishing_access||'Unknown'}</span></div>
+      </div>
+      <div class="psec">
+        <div class="psh">Historical Notes</div>
+        <div class="pnote">${l.notes||'No historical notes recorded.'}</div>
+      </div>
+      <div style="font-size:10px;color:#ccc;margin-top:7px;padding-top:5px;border-top:1px solid #eee">NHD ID: ${l.nhd_id} · Phase 2 Study Lake</div>
+    </div>
+  </div>`;
 }
 
-// Sidebar toggle
-let sidebarOpen = true;
-function toggleSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  const btn = document.getElementById('toggle-sidebar');
+// MARKER LAYERS
+const allLyr=L.layerGroup(),natLyr=L.layerGroup(),antLyr=L.layerGroup(),pubLyr=L.layerGroup(),depLyr=L.layerGroup();
+const allMks=[];
 
-  sidebarOpen = !sidebarOpen;
+function getR(ac){return ac>2000?18:ac>500?14:ac>100?10:ac>30?7:5}
 
-  if (sidebarOpen) {
-    sidebar.classList.remove('collapsed');
-    btn.innerHTML = '&#9664;';
-  } else {
-    sidebar.classList.add('collapsed');
-    btn.innerHTML = '&#9654;';
-  }
+LAKES.forEach(l=>{
+  const r=getR(l.area_acres),col=l.waterbody_class==='Reservoir'?'#4a7c59':(CC[l.county_short]||'#2d6a9f');
+  const opts={radius:r,color:'white',weight:1.5,fillColor:col,fillOpacity:.82};
+  const m=L.circleMarker([l.lat,l.lon],opts);
+  m.bindPopup(mkPopup(l),{maxWidth:320,maxHeight:450,className:'lp-wrap'});
+  m.bindTooltip('<b>'+l.name+'</b><br>'+l.county_short+' · '+l.area_acres.toFixed(0)+' ac',{direction:'top',offset:[0,-r]});
+  m.lakeData=l;
+  allMks.push(m);
+  allLyr.addLayer(m);
+  if(l.waterbody_class!=='Reservoir')natLyr.addLayer(L.circleMarker([l.lat,l.lon],{...opts,fillColor:'#2d6a9f'}).bindPopup(mkPopup(l),{maxWidth:320,maxHeight:450}));
+  else antLyr.addLayer(L.circleMarker([l.lat,l.lon],{...opts,fillColor:'#4a7c59'}).bindPopup(mkPopup(l),{maxWidth:320,maxHeight:450}));
+  if(l.access==='Public')pubLyr.addLayer(L.circleMarker([l.lat,l.lon],{...opts,fillColor:'#2e7d32',radius:r+1}).bindPopup(mkPopup(l),{maxWidth:320,maxHeight:450}));
+  if(l.field_depth_needed==='Yes')depLyr.addLayer(L.circleMarker([l.lat,l.lon],{...opts,fillColor:'#c0392b',color:'#ff8a65'}).bindPopup(mkPopup(l),{maxWidth:320,maxHeight:450}));
+});
+allLyr.addTo(map);
 
-  setTimeout(() => map.invalidateSize(), 310);
+// LAYER STATE
+const lyrMap={all:allLyr,nat:natLyr,ant:antLyr,riv:rivLayer,heat:heatLayer,pub:pubLyr,dep:depLyr,co:coLayer,del:delLayer,lev:levLayer};
+function togL(el,key){
+  const on=el.classList.toggle('on');
+  const lyr=lyrMap[key];if(!lyr)return;
+  on?(!map.hasLayer(lyr)&&map.addLayer(lyr)):(map.hasLayer(lyr)&&map.removeLayer(lyr));
 }
+
+// COUNTY FILTER
+const activeCos=new Set(['Bolivar','Coahoma','Issaquena','Quitman','Tunica','Washington']);
+function filtC(el){
+  const c=el.dataset.c;el.classList.toggle('on');
+  activeCos.has(c)?activeCos.delete(c):activeCos.add(c);
+  allMks.forEach(m=>{const c2=m.lakeData.county_short;activeCos.has(c2)?(!allLyr.hasLayer(m)&&allLyr.addLayer(m)):(allLyr.hasLayer(m)&&allLyr.removeLayer(m))});
+}
+
+// COUNTY PANEL
+function showCPanel(name){
+  const col=CC[name]||'#2d6a9f';
+  const ls=LAKES.filter(l=>l.county_short===name);
+  const nat=ls.filter(l=>l.waterbody_class!=='Reservoir').length;
+  const pub=ls.filter(l=>l.access==='Public').length;
+  const tot=ls.reduce((s,l)=>s+l.area_acres,0);
+  const avg=ls.reduce((s,l)=>s+l.dist_ag_km,0)/ls.length;
+  const items=ls.map(l=>`<div class="cpi" onclick="fly(${l.lat},${l.lon})"><div class="cpd" style="background:${CC[l.county_short]}"></div><div><div style="font-weight:600">${l.name}</div><div style="color:#999;font-size:10.5px">${l.area_acres.toFixed(0)} ac · ${l.access}</div></div></div>`).join('');
+  document.getElementById('cp-content').innerHTML=`
+    <div class="cph" style="color:${col}">${name} County</div>
+    <div class="cps">Mississippi Delta Study Site</div>
+    <div class="cpsg">
+      <div class="cpst"><div class="cpsn" style="color:${col}">${ls.length}</div><div class="cpsl">Study Lakes</div></div>
+      <div class="cpst"><div class="cpsn">${nat}</div><div class="cpsl">Natural</div></div>
+      <div class="cpst"><div class="cpsn">${pub}</div><div class="cpsl">Public Access</div></div>
+      <div class="cpst"><div class="cpsn">${Math.round(tot)}</div><div class="cpsl">Total Acres</div></div>
+    </div>
+    <div style="font-size:11.5px;color:#999;margin-bottom:9px">Avg dist to ag: <b>${avg.toFixed(2)} km</b></div>
+    <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:#bbb;margin-bottom:5px">Lakes in County</div>
+    ${items}`;
+  document.getElementById('cpanel').classList.add('open');
+}
+function closeCPanel(){document.getElementById('cpanel').classList.remove('open')}
+function fly(lat,lon){map.flyTo([lat,lon],12,{duration:1.2});closeCPanel()}
+
+// SEARCH
+const sbx=document.getElementById('sb-search'),srs=document.getElementById('sr');
+sbx.addEventListener('input',function(){
+  const q=this.value.trim().toLowerCase();srs.innerHTML='';
+  if(q.length<2){srs.style.display='none';return}
+  const m=LAKES.filter(l=>l.name.toLowerCase().includes(q)||l.county_short.toLowerCase().includes(q)).slice(0,8);
+  if(!m.length){srs.style.display='none';return}
+  m.forEach(l=>{const d=document.createElement('div');d.className='sri';d.innerHTML='<b>'+l.name+'</b> <span style="color:#aaa">— '+l.county_short+' Co.</span>';d.onclick=function(){map.flyTo([l.lat,l.lon],12,{duration:1.2});srs.style.display='none';sbx.value=''};srs.appendChild(d)});
+  srs.style.display='block';
+});
+document.addEventListener('click',function(e){if(!e.target.closest('#sw'))srs.style.display='none'});
+
+// LOADING
+window.addEventListener('load',function(){
+  setTimeout(function(){const l=document.getElementById('loading');l.style.opacity='0';setTimeout(()=>l.style.display='none',400)},600);
+});
 </script>
-
 </body>
 </html>
